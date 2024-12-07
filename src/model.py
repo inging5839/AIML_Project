@@ -1,4 +1,3 @@
-# 필요한 라이브러리 임포트
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
@@ -14,14 +13,13 @@ from sklearn.svm import SVR
 
 
 # 데이터 생성
-
 df = pd.read_csv('data.csv')
 
 # 데이터 준비
 X = df[['*금융 문해력']]
 y = df['*적금 관심도']
 
-# 데이터 필터링
+# 데이터 필터링  -> 독립변수 2.5 미만 데이터 학습 데이터에 포함 X
 mask = (X['*금융 문해력'] >= 2.5) & (X['*금융 문해력'] <= 5.0)
 X_filtered = X[mask]
 y_filtered = y[mask]
@@ -36,14 +34,14 @@ X_train, X_test, y_train, y_test = train_test_split(
     shuffle=True,
 )
 
-# 2. 교차 검증
+# 교차 검증
 def perform_cross_validation(model, X, y, cv=5):
     scores = cross_val_score(model, X, y, cv=cv, scoring='neg_mean_squared_error')
     rmse_scores = np.sqrt(-scores)
     print(f'\n교차 검증 RMSE 점수: {rmse_scores}')
     print(f'평균 RMSE: {rmse_scores.mean():.4f} (+/- {rmse_scores.std() * 2:.4f})')
 
-# 3. 여러 블랙박스 모델 정의
+# 블랙박스 모델 정의
 models = {
     'linear': LinearRegression(),
     'rf': RandomForestRegressor(random_state=42),
@@ -51,7 +49,7 @@ models = {
     'svr': SVR(kernel='rbf')
 }
 
-# 4. 하이퍼파라미터 탐색
+# 하이퍼파라미터 탐색
 def perform_grid_search(X, y):
     # RandomForest 하이퍼파라미터 그리드
     rf_params = {
@@ -75,7 +73,7 @@ def perform_grid_search(X, y):
     print("최적 RMSE:", np.sqrt(-grid_search.best_score_))
     return grid_search.best_estimator_
 
-# 5. 앙상블 모델 생성
+# 앙상블 모델 생성
 def create_ensemble(models_dict, X, y):
     estimators = []
     for name, model in models_dict.items():
@@ -84,11 +82,6 @@ def create_ensemble(models_dict, X, y):
     
     ensemble = VotingRegressor(estimators=estimators)
     return ensemble
-
-
-
-# 모델 실행
-
 
 # 선형 회귀 모델 평가
 def print_metrics(y_true, y_pred, model_name, X):
@@ -144,13 +137,3 @@ def evaluate_all_models(X_train, X_test, y_train, y_test):
 
 ensemble_model, best_rf = evaluate_all_models(X_train, X_test, y_train, y_test)
 
-# 시각화 업데이트
-plt.figure(figsize=(12, 8))
-plt.scatter(X_filtered, y_filtered, color='blue', label='실제 데이터', alpha=0.5)
-plt.plot(X_filtered, ensemble_model.predict(X_filtered), color='red', label='앙상블 모델')
-plt.plot(X_filtered, best_rf.predict(X_filtered), color='green', label='최적화된 RF')
-plt.xlabel('금융 문해력')
-plt.ylabel('적금 관심도')
-plt.title('금융 문해력과 적금 관심도의 관계 (다양한 모델 비교)')
-plt.legend()
-plt.show()
